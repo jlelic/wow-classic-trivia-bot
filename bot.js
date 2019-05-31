@@ -101,16 +101,6 @@ const findRandomNpcs = (query, limit) => new Promise((resolve, reject) => {
   })
 })
 
-const findRandomNpc = (query) => new Promise((resolve, reject) => {
-  NpcModel.findOneRandom(query, function(err, randomNpc) { // does't work with promises :(
-    if (err) {
-      reject(err)
-      return
-    }
-    resolve(randomNpc)
-  })
-})
-
 const tribes = {
   1: 'Beast',
   2: 'Dragonkin',
@@ -134,6 +124,19 @@ const ranks = {
 }
 
 const questions = [
+  async () => {
+    const options = ['🐺', '🐲', '👺', '🔥', '🐘', '💀', '👨', '🐭', '🤖', '❌']
+    const tribe = Math.floor(Math.random() * options.length) + 1
+    const npc = await findRandomNpc({ tribe })
+    let text = `What is the creature type of **${npc.name}**`
+    options.forEach((option, index) => {
+      text += `\n ${option} for ${tribes[index + 1]}`
+    })
+    const correctOption = options[tribe - 1]
+    const correctText = tribes[tribe]
+    const link = `${encodeURIComponent(npc.name)}#npcs`
+    return { text, options, correctOption, correctText, link }
+  },
   async () => {
     const options = ['❤', '💙', '💚', '💛']
     const npcs = await findRandomNpcs({ subname: { $ne: null } }, 50)
