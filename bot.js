@@ -5,7 +5,10 @@ const NpcModel = require('./models/npc')
 const ItemModel = require('./models/item')
 
 const DATABASE_URI = process.env.MONGODB_URI || 'mongodb://localhost/wowdb'
-const CHANNEL_NAME = 'kai_bot_developers'
+const CHANNEL_NAME = 'kai_wow_trivia'
+const GENERAL_OPTIONS = ['❤', '💙', '💚', '💛']
+const YES_NO_OPTIONS = ['✅', '⛔']
+const CLASS_OPTIONS = ['⚔', '🔨', '🏹', '🌩', '🐻', '🗡', '🔥', '👿', '✝']
 const token = process.env.DISCORD_BOT_TOKEN || require('./bot-token')
 let gameChannel
 
@@ -101,6 +104,17 @@ const findRandomNpcs = (query, limit) => new Promise((resolve, reject) => {
   })
 })
 
+const findRandomItem = (query) => new Promise((resolve, reject) => {
+  ItemModel.findOneRandom(query, async function(err, item) { // does't work with promises :(
+    if (err) {
+      reject(err)
+      return
+    }
+    const droppedBy = await NpcModel.findOne({ id: item.droppedBy })
+    resolve({ item, droppedBy })
+  })
+})
+
 const tribes = {
   1: 'Beast',
   2: 'Dragonkin',
@@ -123,6 +137,21 @@ const ranks = {
   4: 'Boss',
 }
 
+const classMapToDb = [1, 2, 4, 64, 1024, 8, 128, 256, 16]
+const classMapToId = {}
+classMapToDb.forEach((db,i) => classMapToId[db] = i)
+const classes = [
+  'Warrior',
+  'Paladin',
+  'Hunter',
+  'Shaman',
+  'Druid',
+  'Rogue',
+  'Mage',
+  'Warlock',
+  'Priest'
+]
+
 const questions = [
   async () => {
     const options = ['🐺', '🐲', '👺', '🔥', '🐘', '💀', '👨', '🐭', '🤖', '❌']
@@ -138,7 +167,7 @@ const questions = [
     return { text, options, correctOption, correctText, link }
   },
   async () => {
-    const options = ['❤', '💙', '💚', '💛']
+    const options = GENERAL_OPTIONS;
     const npcs = await findRandomNpcs({ subname: { $ne: null } }, 50)
     const chosenOne = npcs[0];
     const optionsTextsSet = new Set([chosenOne.subname])
@@ -151,7 +180,7 @@ const questions = [
     const optionsTexts = shuffle([...optionsTextsSet])
     let text = `What is the title of **${chosenOne.name}**`
     options.forEach((option, index) => {
-      text += `\n ${option} for ${optionsTexts[index]}`
+      text += `\n ${option} for **${optionsTexts[index]}**`
     })
     const correctOption = options[optionsTexts.findIndex(t => t === chosenOne.subname)]
     const correctText = chosenOne.subname
@@ -159,7 +188,7 @@ const questions = [
     return { text, options, correctOption, correctText, link }
   },
   async () => {
-    const options = ['✅', '⛔']
+    const options = YES_NO_OPTIONS
     const correct = Math.floor(Math.random() * 2)
     const query = correct ? { class: 1 } : { class: { $ne: 1 } }
     const npc = await findRandomNpc(query)
@@ -170,7 +199,7 @@ const questions = [
     return { text, options, correctOption, correctText, link }
   },
   async () => {
-    const options = ['🐁','💍','💪','🤑','💀']
+    const options = ['🐁', '💍', '💪', '🤑', '💀']
     const rank = Math.floor(Math.random() * options.length)
     const npc = await findRandomNpc({ rank })
     let text = `What is the classification **${npc.name}**`
@@ -183,7 +212,7 @@ const questions = [
     return { text, options, correctOption, correctText, link }
   },
   async () => {
-    const options = ['✅', '⛔']
+    const options = YES_NO_OPTIONS
     const correct = Math.floor(Math.random() * 2)
     const query = correct ? { skinningId: 0 } : { skinningId: { $ne: 0 } }
     const npc = await findRandomNpc(query)
@@ -192,9 +221,43 @@ const questions = [
     const correctText = correct ? 'No' : 'Yes'
     const link = `${encodeURIComponent(npc.name)}#npcs`
     return { text, options, correctOption, correctText, link }
-  }
+  },
+  async () => {
+    const options = GENERAL_OPTIONS
+    const { item, droppedBy } = await findRandomItem({ droppedBy: { $ne: null } })
+    let text = `Which boss drops **${item.name}**?`
+    const optionsTextsSet = new Set([droppedBy.name])
+    const bosses = await findRandomNpcs({ rank: 4 }, 4)
+    for (let i = 1; i < bosses.length; i++) {
+      optionsTextsSet.add(bosses[i].name)
+      if (optionsTextsSet.size >= options.length) {
+        break;
+      }
+    }
+    const optionsTexts = shuffle([...optionsTextsSet])
+    options.forEach((option, index) => {
+      text += `\n ${option} for **${optionsTexts[index]}**`
+    })
+    const correctOption = options[optionsTexts.findIndex(t => t === droppedBy.name)]
+    const correctText = droppedBy.name
+    const link = `${encodeURIComponent(item.name)}#items`
+    return { text, options, correctOption, correctText, link }
+  },
+  async () => {
+    const options = CLASS_OPTIONS
+    const correct = Math.floor(Math.random()*classes.length)
+    const { item } = await findRandomItem({allowableClass: classMapToDb[correct]})
+    let text = `**${item.name}** is specific for which class?`
+    options.forEach((option, index) => {
+      text += `\n ${option} for **${classes[index]}**`
+    })
+    const correctText = classes[correct]
+    const correctOption = options[correct]
+    const link = `${encodeURIComponent(item.name)}#items`
+    return { text, options, correctOption, correctText, link }
+  },
 ]
-const TIME_FOR_QUESTION = 15
+const TIME_FOR_QUESTION = 12
 const TOTAL_ROUNDS = questions.length
 
 const play = async () => {
@@ -202,12 +265,12 @@ const play = async () => {
   scores = {}
   do {
     const { text, options, correctOption, correctText, link } = await questions[round - 1]()
-    const questionMessage = await gameChannel.send(text)
+    const questionMessage = await gameChannel.send(`-- Round ${round}/${TOTAL_ROUNDS} --\n${text}`)
     asyncForEach(options, option => questionMessage.react(option))
     await sleep(options.length * 600)
     await questionMessage.edit(`-- Round ${round}/${TOTAL_ROUNDS} --\n${text}\nYou have ${TIME_FOR_QUESTION} seconds to answer`)
     await sleep(TIME_FOR_QUESTION * 1000)
-    const resultMessage = await gameChannel.send(`Round's over, the correct answer was: ${correctOption} - ${correctText}\nhttps://classic.wowhead.com/search?q=${link}`)
+    const resultMessage = await gameChannel.send(`Round's over, the correct answer was: ${correctOption} - **${correctText}**\nhttps://classic.wowhead.com/search?q=${link}`)
     await updateScores(questionMessage, correctOption)
     round++
   } while (round <= TOTAL_ROUNDS)
