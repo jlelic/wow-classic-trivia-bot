@@ -87,84 +87,24 @@ const shuffle = (array) => {
   return array;
 }
 
-const findRandomNpc = (query) => new Promise((resolve, reject) => {
-  NpcModel.findOneRandom(query, function(err, randomNpc) { // does't work with promises :(
+const findOneRandom = (model, query) => new Promise((resolve, reject) => {
+  model.findOneRandom(query, async function(err, result) { // does't work with promises :(
     if (err) {
       reject(err)
       return
     }
-    resolve(randomNpc)
+    resolve(result)
   })
 })
 
-const findRandomNpcs = (query, limit) => new Promise((resolve, reject) => {
-  NpcModel.findRandom(query, {}, { limit }, function(err, randomNpcs) { // does't work with promises :(
+
+const findRandom = (model, query, limit) => new Promise((resolve, reject) => {
+  model.findRandom(query, {}, { limit }, function(err, results) { // does't work with promises :(
     if (err) {
       reject(err)
       return;
     }
-    resolve(randomNpcs)
-  })
-})
-
-const findRandomItem = (query) => new Promise((resolve, reject) => {
-  ItemModel.findOneRandom(query, async function(err, item) { // does't work with promises :(
-    if (err) {
-      reject(err)
-      return
-    }
-    const droppedBy = await NpcModel.findOne({ id: item.droppedBy })
-    resolve({ item, droppedBy })
-  })
-})
-
-const findRandomAbility = (query) => new Promise((resolve, reject) => {
-  AbilityModel.findOneRandom(query, async function(err, ability) { // does't work with promises :(
-    if (err) {
-      reject(err)
-      return
-    }
-    resolve(ability)
-  })
-})
-
-const findRandomAbilities = (query, limit) => new Promise((resolve, reject) => {
-  AbilityModel.findRandom(query, {}, { limit }, function(err, ability) { // does't work with promises :(
-    if (err) {
-      reject(err)
-      return;
-    }
-    resolve(ability)
-  })
-})
-
-const findRandomFactions = (query, limit) => new Promise((resolve, reject) => {
-  FactionModel.findRandom(query, {}, { limit }, function(err, factions) { // does't work with promises :(
-    if (err) {
-      reject(err)
-      return;
-    }
-    resolve(factions)
-  })
-})
-
-const findRandomTeleport = (query) => new Promise((resolve, reject) => {
-  TeleportModel.findOneRandom(query, async function(err, teleport) { // does't work with promises :(
-    if (err) {
-      reject(err)
-      return
-    }
-    resolve(teleport)
-  })
-})
-
-const findRandomTeleports = (query, limit) => new Promise((resolve, reject) => {
-  TeleportModel.findRandom(query, {}, { limit }, function(err, teleports) { // does't work with promises :(
-    if (err) {
-      reject(err)
-      return;
-    }
-    resolve(teleports)
+    resolve(results)
   })
 })
 
@@ -212,7 +152,7 @@ const questions = [
   async () => {
     const options = ['🐺', '🐲', '👺', '🔥', '🐘', '💀', '👨', '🐭', '🤖', '❌']
     const tribe = Math.floor(Math.random() * options.length) + 1
-    const npc = await findRandomNpc({ tribe })
+    const npc = await findOneRandom(NpcModel, { tribe })
     let text = `What is the creature type of **${npc.name}**`
     options.forEach((option, index) => {
       text += `\n ${option} for ${tribes[index + 1]}`
@@ -224,7 +164,7 @@ const questions = [
   },
   async () => {
     const options = GENERAL_OPTIONS;
-    const npcs = shuffle(await findRandomNpcs({ subname: { $ne: null } }, 50))
+    const npcs = shuffle(await findRandom(NpcModel, { subname: { $ne: null } }, 50))
     const chosenOne = npcs[0];
     const optionsTextsSet = new Set([chosenOne.subname])
     for (let i = 1; i < npcs.length; i++) {
@@ -247,7 +187,7 @@ const questions = [
     const options = YES_NO_OPTIONS
     const correct = Math.floor(Math.random() * 2)
     const query = correct ? { class: 1 } : { class: { $ne: 1 } }
-    const npc = await findRandomNpc(query)
+    const npc = await findOneRandom(NpcModel, query)
     let text = `Does **${npc.name}** have mana?`
     const correctOption = options[correct]
     const correctText = correct ? 'No' : 'Yes'
@@ -257,7 +197,7 @@ const questions = [
   async () => {
     const options = ['🐁', '💍', '💪', '🤑', '💀']
     const rank = Math.floor(Math.random() * options.length)
-    const npc = await findRandomNpc({ rank })
+    const npc = await findOneRandom(NpcModel, { rank })
     let text = `What is the classification **${npc.name}**`
     options.forEach((option, index) => {
       text += `\n ${option} for ${ranks[index]}`
@@ -271,7 +211,7 @@ const questions = [
     const options = YES_NO_OPTIONS
     const correct = Math.floor(Math.random() * 2)
     const query = correct ? { skinningId: 0 } : { skinningId: { $ne: 0 } }
-    const npc = await findRandomNpc(query)
+    const npc = await findOneRandom(NpcModel, query)
     let text = `Is **${npc.name}** skinnable?`
     const correctOption = options[correct]
     const correctText = correct ? 'No' : 'Yes'
@@ -280,10 +220,11 @@ const questions = [
   },
   async () => {
     const options = GENERAL_OPTIONS
-    const { item, droppedBy } = await findRandomItem({ droppedBy: { $ne: null } })
+    const item = await findOneRandom(ItemModel, { droppedBy: { $ne: null } })
+    const droppedBy = await findOneRandom(NpcModel, { id: item.droppedBy })
     let text = `Which boss drops **${item.name}**?`
     const optionsTextsSet = new Set([droppedBy.name])
-    const bosses = await findRandomNpcs({ rank: 4 }, 4)
+    const bosses = await findRandom(NpcModel, { rank: 4 }, 4)
     for (let i = 1; i < bosses.length; i++) {
       optionsTextsSet.add(bosses[i].name)
       if (optionsTextsSet.size >= options.length) {
@@ -302,7 +243,7 @@ const questions = [
   async () => {
     const options = CLASS_OPTIONS
     const correct = Math.floor(Math.random() * classes.length)
-    const { item } = await findRandomItem({ allowableClass: classMapToDb[correct] })
+    const item = await findOneRandom(ItemModel, { allowableClass: classMapToDb[correct] })
     let text = `**${item.name}** is specific for which class?`
     options.forEach((option, index) => {
       text += `\n ${option} for **${classes[index]}**`
@@ -314,11 +255,11 @@ const questions = [
   },
   async () => {
     const options = GENERAL_OPTIONS;
-    const chosenOne = await findRandomAbility(
+    const chosenOne = await findOneRandom(AbilityModel,
       {
         description: { $ne: null }
       })
-    const abilities = shuffle(await findRandomAbilities(
+    const abilities = shuffle(await findRandom(AbilityModel,
       {
         description: { $ne: null },
         school: chosenOne.school
@@ -345,11 +286,11 @@ const questions = [
   },
   async () => {
     const options = GENERAL_OPTIONS;
-    const chosenOne = await findRandomAbility(
+    const chosenOne = await findOneRandom(AbilityModel,
       {
         imageUrl: { $ne: null }
       })
-    const abilities = shuffle(await findRandomAbilities(
+    const abilities = shuffle(await findRandom(AbilityModel,
       {
         imageUrl: { $ne: null },
         school: chosenOne.school
@@ -377,17 +318,19 @@ const questions = [
   },
   async () => {
     const options = YES_NO_OPTIONS;
-    const ability1 = await findRandomAbility({
-      level: { $ne: 0 },
-      $or: [{ subname: 'Rank 1' }, { subname: '' }]
-    })
-    const ability2 = await findRandomAbility({
-      $and: [
-        { level: { $ne: 0 } },
-        { level: { $ne: ability1.level } }
-      ],
-      $or: [{ subname: 'Rank 1' }, { subname: '' }]
-    })
+    const ability1 = await findOneRandom(AbilityModel,
+      {
+        level: { $ne: 0 },
+        $or: [{ subname: 'Rank 1' }, { subname: '' }]
+      })
+    const ability2 = await findRandom(AbilityModel,
+      {
+        $and: [
+          { level: { $ne: 0 } },
+          { level: { $ne: ability1.level } }
+        ],
+        $or: [{ subname: 'Rank 1' }, { subname: '' }]
+      })
     let text = `Can you get **${ability1.name}** at an earlier level than **${ability2.name}**?`
     const correct = ability1.level < ability2.level ? 0 : 1
     const correctOption = YES_NO_OPTIONS[correct]
@@ -397,19 +340,21 @@ const questions = [
   },
   async () => {
     const options = YES_NO_OPTIONS;
-    const ability1 = await findRandomAbility({
-      $and: [
-        { range: { $gt: 10 } },
-      ],
-      class: { $ne: 0 }
-    })
-    const ability2 = await findRandomAbility({
-      $and: [
-        { range: { $gt: 10 } },
-        { range: { $ne: ability1.range } }
-      ],
-      class: { $ne: 0 }
-    })
+    const ability1 = await findOneRandom(AbilityModel,
+      {
+        $and: [
+          { range: { $gt: 10 } },
+        ],
+        class: { $ne: 0 }
+      })
+    const ability2 = await findRandom(AbilityModel,
+      {
+        $and: [
+          { range: { $gt: 10 } },
+          { range: { $ne: ability1.range } }
+        ],
+        class: { $ne: 0 }
+      })
     let text = `Does **${ability1.name}${ability1.subname ? ` ${ability1.subname}` : ''}** have a bigger range than **${ability2.name}${ability2.subname ? ` ${ability2.subname}` : ''}**?`
     const correct = ability1.range > ability2.range ? 0 : 1
     const correctOption = YES_NO_OPTIONS[correct]
@@ -419,19 +364,21 @@ const questions = [
   },
   async () => {
     const options = YES_NO_OPTIONS;
-    const ability1 = await findRandomAbility({
-      $and: [
-        { castTime: { $gt: 0 } },
-      ],
-      class: { $ne: 0 }
-    })
-    const ability2 = await findRandomAbility({
-      $and: [
-        { castTime: { $gt: 0 } },
-        { castTime: { $ne: ability1.castTime } }
-      ],
-      class: { $ne: 0 }
-    })
+    const ability1 = await findOneRandom(AbilityModel,
+      {
+        $and: [
+          { castTime: { $gt: 0 } },
+        ],
+        class: { $ne: 0 }
+      })
+    const ability2 = await findOneRandom(AbilityModel,
+      {
+        $and: [
+          { castTime: { $gt: 0 } },
+          { castTime: { $ne: ability1.castTime } }
+        ],
+        class: { $ne: 0 }
+      })
     let text = `Does **${ability1.name}${ability1.subname ? ` ${ability1.subname}` : ''}** have a longer cast time than **${ability2.name}${ability2.subname ? ` ${ability2.subname}` : ''}**?`
     const correct = ability1.castTime > ability2.castTime ? 0 : 1
     const correctOption = YES_NO_OPTIONS[correct]
@@ -441,19 +388,21 @@ const questions = [
   },
   async () => {
     const options = YES_NO_OPTIONS;
-    const ability1 = await findRandomAbility({
-      $and: [
-        { cooldown: { $gt: 0 } },
-      ],
-      class: { $ne: 0 }
-    })
-    const ability2 = await findRandomAbility({
-      $and: [
-        { cooldown: { $gt: 0 } },
-        { cooldown: { $ne: ability1.cooldown } }
-      ],
-      class: { $ne: 0 }
-    })
+    const ability1 = await findOneRandom(AbilityModel,
+      {
+        $and: [
+          { cooldown: { $gt: 0 } },
+        ],
+        class: { $ne: 0 }
+      })
+    const ability2 = await findOneRandom(AbilityModel,
+      {
+        $and: [
+          { cooldown: { $gt: 0 } },
+          { cooldown: { $ne: ability1.cooldown } }
+        ],
+        class: { $ne: 0 }
+      })
     let text = `Does **${ability1.name}${ability1.subname ? ` ${ability1.subname}` : ''}** have a longer cooldown than **${ability2.name}${ability2.subname ? ` ${ability2.subname}` : ''}**?`
     const correct = ability1.cooldown > ability2.cooldown ? 0 : 1
     const correctOption = YES_NO_OPTIONS[correct]
@@ -463,7 +412,7 @@ const questions = [
   },
   async () => {
     const options = GENERAL_OPTIONS;
-    const factions = shuffle(await findRandomFactions({}, 4))
+    const factions = shuffle(await findRandom(FactionModel, {}, 4))
     const correct = Math.floor(Math.random() * GENERAL_OPTIONS.length)
     let text = `Which faction fits the following description:\n*${factions[correct].descriptionCensored}*\n?`
     factions.forEach((faction, index) => {
@@ -476,8 +425,8 @@ const questions = [
   },
   async () => {
     const options = YES_NO_OPTIONS;
-    const teleport1 = await findRandomTeleport({})
-    const teleport2 = await findRandomTeleport({
+    const teleport1 = await findOneRandom(TeleportModel, {})
+    const teleport2 = await findOneRandom(TeleportModel, {
       id: { $ne: teleport1.id },
       map: teleport1.map,
       $or: [
@@ -494,8 +443,8 @@ const questions = [
   },
   async () => {
     const options = GENERAL_OPTIONS.slice(0, 3);
-    const chosenOne = await findRandomTeleport({})
-    const otherTeleports = await findRandomTeleports({ map: { $ne: chosenOne.map } }, 2)
+    const chosenOne = await findOneRandom(TeleportModel, {})
+    const otherTeleports = await findRandom(TeleportModel, { map: { $ne: chosenOne.map } }, 2)
     let text = `Which of these locations is on a different continent than the other 2?`
     const teleports = shuffle([chosenOne, ...otherTeleports])
     teleports.forEach((teleport, index) => {
@@ -507,7 +456,7 @@ const questions = [
     return { text, options, correctOption, correctText, link }
   },
 ]
-const TIME_FOR_QUESTION = 12
+const TIME_FOR_QUESTION = 5
 const TOTAL_ROUNDS = questions.length
 
 const play = async () => {
