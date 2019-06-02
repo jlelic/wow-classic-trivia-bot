@@ -4,6 +4,7 @@ const mongoose = require('mongoose')
 const NpcModel = require('./models/npc')
 const ItemModel = require('./models/item')
 const AbilityModel = require('./models/ability')
+const FactionModel = require('./models/faction')
 
 const DATABASE_URI = process.env.MONGODB_URI || 'mongodb://localhost/wowdb'
 const CHANNEL_NAME = 'kai_wow_trivia'
@@ -136,6 +137,16 @@ const findRandomAbilities = (query, limit) => new Promise((resolve, reject) => {
   })
 })
 
+const findRandomFactions = (query, limit) => new Promise((resolve, reject) => {
+  FactionModel.findRandom(query, {}, { limit }, function(err, factions) { // does't work with promises :(
+    if (err) {
+      reject(err)
+      return;
+    }
+    resolve(factions)
+  })
+})
+
 
 const tribes = {
   1: 'Beast',
@@ -190,7 +201,7 @@ const questions = [
   },
   async () => {
     const options = GENERAL_OPTIONS;
-    const npcs = await findRandomNpcs({ subname: { $ne: null } }, 50)
+    const npcs = shuffle(await findRandomNpcs({ subname: { $ne: null } }, 50))
     const chosenOne = npcs[0];
     const optionsTextsSet = new Set([chosenOne.subname])
     for (let i = 1; i < npcs.length; i++) {
@@ -401,12 +412,25 @@ const questions = [
     const link = `${ability1.url}\n${ability2.url}`
     return { text, options, correctOption, correctText, link }
   },
+  async () => {
+    const options = GENERAL_OPTIONS;
+    const factions = shuffle(await findRandomFactions({}, 4))
+    const correct = Math.floor(Math.random() * GENERAL_OPTIONS.length)
+    let text = `Which faction fits the following description:\n*${factions[correct].descriptionCensored}*\n?`
+    factions.forEach((faction, index) => {
+      text += `\n ${options[index]} for **${faction.name}**`
+    })
+    const correctOption = options[correct]
+    const correctText = factions[correct].name
+    const link = factions[correct].url
+    return { text, options, correctOption, correctText, link }
+  },
 ]
-const TIME_FOR_QUESTION = 12
+const TIME_FOR_QUESTION = 13
 const TOTAL_ROUNDS = questions.length
 
 const play = async () => {
-  round = 11
+  round = 13
   scores = {}
   do {
     const { text, options, correctOption, correctText, link, file } = await questions[round - 1]()
