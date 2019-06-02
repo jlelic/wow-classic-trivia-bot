@@ -5,6 +5,7 @@ const NpcModel = require('./models/npc')
 const ItemModel = require('./models/item')
 const AbilityModel = require('./models/ability')
 const FactionModel = require('./models/faction')
+const TeleportModel = require('./models/teleport')
 
 const DATABASE_URI = process.env.MONGODB_URI || 'mongodb://localhost/wowdb'
 const CHANNEL_NAME = 'kai_wow_trivia'
@@ -147,6 +148,27 @@ const findRandomFactions = (query, limit) => new Promise((resolve, reject) => {
   })
 })
 
+const findRandomTeleport = (query) => new Promise((resolve, reject) => {
+  TeleportModel.findOneRandom(query, async function(err, teleport) { // does't work with promises :(
+    if (err) {
+      reject(err)
+      return
+    }
+    resolve(teleport)
+  })
+})
+
+const findRandomTeleports = (query, limit) => new Promise((resolve, reject) => {
+  TeleportModel.findRandom(query, {}, { limit }, function(err, teleports) { // does't work with promises :(
+    if (err) {
+      reject(err)
+      return;
+    }
+    resolve(teleports)
+  })
+})
+
+
 
 const tribes = {
   1: 'Beast',
@@ -169,6 +191,8 @@ const ranks = {
   3: 'Rare Elite',
   4: 'Boss',
 }
+
+const maps = ['Eastern Kingdoms', 'Kalimdor']
 
 const classMapToDb = [1, 2, 4, 64, 1024, 8, 128, 256, 16]
 const classMapToId = {}
@@ -425,12 +449,44 @@ const questions = [
     const link = factions[correct].url
     return { text, options, correctOption, correctText, link }
   },
+  async () => {
+    const options = YES_NO_OPTIONS;
+    const teleport1 = await findRandomTeleport({})
+    const teleport2 = await findRandomTeleport({
+      id: { $ne: teleport1.id },
+      map: teleport1.map,
+      $or: [
+        { positionX: { $gt: teleport1.positionX + 300 } },
+        { positionX: { $lt: teleport1.positionX - 300 } },
+      ]
+    })
+    let text = `Is **${teleport1.name}** more to the **north** than **${teleport2.name}**?`
+    const correct = teleport1.positionX > teleport2.positionX ? 0 : 1
+    const correctOption = YES_NO_OPTIONS[correct]
+    const correctText = correct ? 'No' : 'Yes'
+    const link = `https://wow.gamepedia.com/index.php?search=${encodeURIComponent(teleport1.name)}\nhttps://wow.gamepedia.com/index.php?search=${encodeURIComponent(teleport2.name)}`
+    return { text, options, correctOption, correctText, link }
+  },
+  async () => {
+    const options = GENERAL_OPTIONS.slice(0,3);
+    const chosenOne = await findRandomTeleport({})
+    const otherTeleports = await findRandomTeleports({map: { $ne: chosenOne.map}}, 2)
+    let text = `Which of these locations is on a different continent than the other 2?`
+    const teleports = shuffle([chosenOne, ...otherTeleports])
+    teleports.forEach((teleport, index) => {
+      text += `\n ${options[index]} for **${teleport.name}**`
+    })
+    const correctOption = options[teleports.findIndex(t => t === chosenOne)]
+    const correctText = ' ** \n' + teleports.map(teleport => `**${teleport.name}** - **${maps[teleport.map]}**`).join('\n') + ' ** '
+    const link = `https://wow.gamepedia.com/index.php?search=${encodeURIComponent(chosenOne.name)}`
+    return { text, options, correctOption, correctText, link }
+  },
 ]
-const TIME_FOR_QUESTION = 13
+const TIME_FOR_QUESTION = 12
 const TOTAL_ROUNDS = questions.length
 
 const play = async () => {
-  round = 13
+  round = 1
   scores = {}
   do {
     const { text, options, correctOption, correctText, link, file } = await questions[round - 1]()
@@ -461,17 +517,29 @@ const parseScore = () => {
 }
 
 const updateScores = async (question, correct) => {
+  const voted = new Set()
+  const updates = {}
   await asyncForEach([...question.reactions.values()], async reaction => {
+    let scoreDiff = reaction.emoji.name === correct ? 1 : 0
     if (reaction.users.size === 1) {
       return;
     }
     [...reaction.users.values()].forEach(user => {
       if (!user.bot) {
-        let scoreDiff = reaction.emoji.name === correct ? 1 : -1;
-        scores[user.id] = (scores[user.id] || 0) + scoreDiff;
+        if(voted.has(user.id)) {
+          updates[user.id] = -1
+        }
+        voted.add(user.id)
+        updates[user.id] = (updates[user.id] || 0) + scoreDiff
       }
     });
   });
+  const updateText = Object.entries(updates).map(([playerId, score]) => {
+    scores[playerId] = (scores[playerId] || 0) + score
+    return `<@${playerId}> ${score>0 ? '+' : ''}${score}`
+  })
+    .join(', ')
+  await gameChannel.send(`Score updates: ${updateText}`)
 }
 
 const exit = async () => {
