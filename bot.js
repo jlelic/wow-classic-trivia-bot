@@ -169,7 +169,6 @@ const findRandomTeleports = (query, limit) => new Promise((resolve, reject) => {
 })
 
 
-
 const tribes = {
   1: 'Beast',
   2: 'Dragonkin',
@@ -379,10 +378,14 @@ const questions = [
   async () => {
     const options = YES_NO_OPTIONS;
     const ability1 = await findRandomAbility({
+      level: { $ne: 0 },
       $or: [{ subname: 'Rank 1' }, { subname: '' }]
     })
     const ability2 = await findRandomAbility({
-      level: { $ne: ability1.level },
+      $and: [
+        { level: { $ne: 0 } },
+        { level: { $ne: ability1.level } }
+      ],
       $or: [{ subname: 'Rank 1' }, { subname: '' }]
     })
     let text = `Can you get **${ability1.name}** at an earlier level than **${ability2.name}**?`
@@ -437,6 +440,28 @@ const questions = [
     return { text, options, correctOption, correctText, link }
   },
   async () => {
+    const options = YES_NO_OPTIONS;
+    const ability1 = await findRandomAbility({
+      $and: [
+        { cooldown: { $gt: 0 } },
+      ],
+      class: { $ne: 0 }
+    })
+    const ability2 = await findRandomAbility({
+      $and: [
+        { cooldown: { $gt: 0 } },
+        { cooldown: { $ne: ability1.cooldown } }
+      ],
+      class: { $ne: 0 }
+    })
+    let text = `Does **${ability1.name}${ability1.subname ? ` ${ability1.subname}` : ''}** have a longer cooldown than **${ability2.name}${ability2.subname ? ` ${ability2.subname}` : ''}**?`
+    const correct = ability1.cooldown > ability2.cooldown ? 0 : 1
+    const correctOption = YES_NO_OPTIONS[correct]
+    const correctText = ` ** ${ability1.name}${ability1.subname ? ` ${ability1.subname}` : ''} has **${ability1.cooldown} s** cooldown and ${ability2.name}${ability2.subname ? ` ${ability2.subname}` : ''} has **${ability2.cooldown} s**!** `
+    const link = `${ability1.url}\n${ability2.url}`
+    return { text, options, correctOption, correctText, link }
+  },
+  async () => {
     const options = GENERAL_OPTIONS;
     const factions = shuffle(await findRandomFactions({}, 4))
     const correct = Math.floor(Math.random() * GENERAL_OPTIONS.length)
@@ -468,9 +493,9 @@ const questions = [
     return { text, options, correctOption, correctText, link }
   },
   async () => {
-    const options = GENERAL_OPTIONS.slice(0,3);
+    const options = GENERAL_OPTIONS.slice(0, 3);
     const chosenOne = await findRandomTeleport({})
-    const otherTeleports = await findRandomTeleports({map: { $ne: chosenOne.map}}, 2)
+    const otherTeleports = await findRandomTeleports({ map: { $ne: chosenOne.map } }, 2)
     let text = `Which of these locations is on a different continent than the other 2?`
     const teleports = shuffle([chosenOne, ...otherTeleports])
     teleports.forEach((teleport, index) => {
@@ -526,7 +551,7 @@ const updateScores = async (question, correct) => {
     }
     [...reaction.users.values()].forEach(user => {
       if (!user.bot) {
-        if(voted.has(user.id)) {
+        if (voted.has(user.id)) {
           updates[user.id] = -1
         }
         voted.add(user.id)
@@ -536,7 +561,7 @@ const updateScores = async (question, correct) => {
   });
   const updateText = Object.entries(updates).map(([playerId, score]) => {
     scores[playerId] = (scores[playerId] || 0) + score
-    return `<@${playerId}> ${score>0 ? '+' : ''}${score}`
+    return `<@${playerId}> ${score > 0 ? '+' : ''}${score}`
   })
     .join(', ')
   await gameChannel.send(`Score updates: ${updateText}`)

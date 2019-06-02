@@ -12,6 +12,7 @@ const Abilities = new mongoose.Schema({
   cost: { type: Number },
   resource: { type: Number },
   range: { type: Number },
+  cooldown: { type: Number },
   castTime: { type: Number },
   isChannelled: { type: Boolean },
   url: { type: String },
