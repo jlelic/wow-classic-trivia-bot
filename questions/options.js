@@ -1,0 +1,5 @@
+export const GENERAL_OPTIONS = ['❤', '💙', '💚', '💛']
+export const YES_NO_OPTIONS = ['✅', '⛔']
+export const CLASS_OPTIONS = ['⚔', '🔨', '🏹', '🌩', '🐻', '🗡', '🔥', '👿', '✝']
+export const TRIBE_OPTIONS = ['🐺', '🐲', '👺', '🔥', '🐘', '💀', '👨', '🐭', '🤖', '❌']
+export const RARITY_OPTIONS = ['🐁', '💍', '💪', '🤑', '💀']

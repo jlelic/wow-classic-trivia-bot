@@ -14,4 +14,4 @@ const Talents = new mongoose.Schema({
 
 Talents.plugin(mongooseRandom);
 
-module.exports = mongoose.model('Talent', Talents);
+export default  mongoose.model('Talent', Talents);

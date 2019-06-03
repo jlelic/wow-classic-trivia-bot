@@ -14,4 +14,4 @@ const NpcSchema = new mongoose.Schema({
 
 NpcSchema.plugin(mongooseRandom);
 
-module.exports = mongoose.model('Npc', NpcSchema);
+export default  mongoose.model('Npc', NpcSchema);

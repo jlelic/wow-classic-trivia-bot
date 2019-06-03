@@ -21,4 +21,4 @@ const Abilities = new mongoose.Schema({
 
 Abilities.plugin(mongooseRandom);
 
-module.exports = mongoose.model('Ability', Abilities, 'abilities');
+export default mongoose.model('Ability', Abilities, 'abilities');

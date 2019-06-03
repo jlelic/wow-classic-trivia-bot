@@ -12,4 +12,4 @@ const Teleports = new mongoose.Schema({
 
 Teleports.plugin(mongooseRandom);
 
-module.exports = mongoose.model('Teleport', Teleports);
+export default mongoose.model('Teleport', Teleports);

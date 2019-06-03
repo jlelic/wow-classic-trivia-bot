@@ -15,4 +15,4 @@ const ItemSchema = new mongoose.Schema({
 
 ItemSchema.plugin(mongooseRandom)
 
-module.exports = mongoose.model('Item', ItemSchema)
+export default mongoose.model('Item', ItemSchema)
