@@ -27,10 +27,7 @@ export default class TriviaGame {
       const timerMessage = await this.gameChannel.send(timeLeft)
       asyncForEach(options, option => questionMessage.react(option))
       await sleep(options.length * 600)
-      for (let i = timeLeft; i >= 0; i--) {
-        await timerMessage.edit(i)
-        await sleep(1000)
-      }
+      await this.countdownMessage(timerMessage, timeLeft)
       const resultMessage = await this.gameChannel.send(`Round's over, the correct answer was: ${correctOption} - **${correctText}**\n${httpLink}`)
       await this.updateScores(questionMessage, correctOption)
       this.round++
@@ -38,6 +35,13 @@ export default class TriviaGame {
     await this.gameChannel.send('Game over!')
     await this.gameChannel.send(this.parseScore(this.scores) || 'No results!')
     this.round = 0
+  }
+
+  async countdownMessage(timerMessage, timeLeft) {
+    for (let i = timeLeft; i >= 0; i--) {
+      await timerMessage.edit(i)
+      await sleep(1000)
+    }
   }
 
   parseScore(scores) {
@@ -55,13 +59,16 @@ export default class TriviaGame {
       if (reaction.users.size === 1) {
         return;
       }
-      [...reaction.users.values()].forEach(user => {
+      [...reaction.users.values()].forEach((user, index) => {
         if (!user.bot) {
           if (voted.has(user.id)) {
             updates[user.id] = -1
           }
           voted.add(user.id)
           updates[user.id] = (updates[user.id] || 0) + scoreDiff
+          if(index === 1 && scoreDiff) {
+            updates[user.id] += 0.5
+          }
         }
       });
     });

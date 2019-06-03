@@ -1,6 +1,7 @@
 const Discord = require('discord.js')
 const fs = require('fs')
 import { connect } from './db'
+import BattleRoyale from './battle-royale'
 import {
   getAllQuestions, getCategories, getCategoryQuestions,
   getLimitedQuestions, getOneQuestion
@@ -13,6 +14,7 @@ if (!token) {
 }
 
 let game
+let battleRoyale
 const categories = getCategories()
 const client = new Discord.Client()
 client.on('error', (err) => {
@@ -21,7 +23,7 @@ client.on('error', (err) => {
 
 client.on('ready', async () => {
   console.log(`Bot has started, with ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} guilds.`);
-
+  client.user.setActivity('Type `test help`')
   try {
     await connect()
   } catch (e) {
@@ -29,6 +31,7 @@ client.on('ready', async () => {
     exit()
   }
   game = new TriviaGame()
+  battleRoyale = new BattleRoyale()
 })
 
 client.on('message', async (message) => {
@@ -56,6 +59,10 @@ client.on('message', async (message) => {
       }
       game.play(message.channel, getLimitedQuestions(num || 10))
       return
+    case 'royale':
+      const otherPlayers = message.content.match(/\d{18,18}/g) || []
+      battleRoyale.play(message.channel, [message.author.id, ...otherPlayers])
+      return
     case 'quick':
       game.play(message.channel, getOneQuestion())
       return
@@ -64,12 +71,13 @@ client.on('message', async (message) => {
       return
     case 'help':
       replyText = `Supported commands:
-      \`me\` - test with 10 questions from random categories
-      \`me X\` - test with X questions from random categories
-      \`me X C\` - test with X questions from category C
-      \`quick\` - test with 1 question
-      \`final\` - test with all questions
-      \`categories\` - lists categories
+      \`test me\` - test with 10 questions from random categories
+      \`test me X\` - test with X questions from random categories
+      \`test me X C\` - test with X questions from category C
+      \`test quick\` - test with 1 question
+      \`test final\` - test with all questions
+      \`test royale @player1 @player2 @player3...\` - trivia battle royale with specified players
+      \`test categories\` - lists categories
       `
       break
     case 'categories':
