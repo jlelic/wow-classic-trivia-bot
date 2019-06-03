@@ -1,17 +1,22 @@
 import { asyncForEach, sleep } from './utils'
 
-const DEFAULT_TIME_FOR_QUESTION = 5
+const DEFAULT_TIME_FOR_QUESTION = 12
 
 
 export default class TriviaGame {
 
-  constructor(channel) {
-    this.gameChannel = channel
+  constructor() {
     this.scores = {}
     this.round = 0
   }
 
-  async play(questions) {
+  async play(channel, questions) {
+    if(this.round > 0) {
+      channel.send(`Sorry, I'm busy with a game already in progress in <#${this.gameChannel.id}>`)
+      return
+    }
+
+    this.gameChannel = channel
     this.round = 1
     this.scores = {}
     do {

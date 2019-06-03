@@ -12,7 +12,7 @@ const categoryQuestions = {
   items: itemsQuestions,
   locations: locationsQuestions,
   npcs: npcsQuestions,
-  talentsQuestions: talentsQuestions
+  talents: talentsQuestions
 }
 
 // Array​.prototype​.flat doesn't work on node?
@@ -22,9 +22,9 @@ export const getCategories = () => Object.keys(categoryQuestions)
 
 export const getOneQuestion = () => [shuffle(allQuestions)[0]]
 
-export const getCategoryQuestion = (category) => [shuffle(categoryQuestions[category])[0]]
+export const getCategoryQuestions = (category, n) => shuffle(categoryQuestions[category]).slice(0, n)
 
-export const getLimitedQuestionsRandomized = (n) => shuffle(allQuestions).slice(0, n)
+export const getLimitedQuestions = (n) => shuffle(allQuestions).slice(0, n)
 
-export const getAllQuestionsRandomized = () => shuffle(allQuestions)
+export const getAllQuestions = () => shuffle(allQuestions)
 
