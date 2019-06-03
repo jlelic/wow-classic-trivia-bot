@@ -6,6 +6,7 @@ const ItemModel = require('./models/item')
 const AbilityModel = require('./models/ability')
 const FactionModel = require('./models/faction')
 const TeleportModel = require('./models/teleport')
+const TalentModel = require('./models/talent')
 
 const DATABASE_URI = process.env.MONGODB_URI || 'mongodb://localhost/wowdb'
 const CHANNEL_NAME = 'kai_wow_trivia'
@@ -88,6 +89,7 @@ const shuffle = (array) => {
 }
 
 const findOneRandom = (model, query) => new Promise((resolve, reject) => {
+  console.log(query)
   model.findOneRandom(query, async function(err, result) { // does't work with promises :(
     if (err) {
       reject(err)
@@ -99,6 +101,7 @@ const findOneRandom = (model, query) => new Promise((resolve, reject) => {
 
 
 const findRandom = (model, query, limit) => new Promise((resolve, reject) => {
+  console.log(query)
   model.findRandom(query, {}, { limit }, function(err, results) { // does't work with promises :(
     if (err) {
       reject(err)
@@ -148,6 +151,14 @@ const classes = [
   'Priest'
 ]
 
+const talentPercentages = [
+  [1, 2, 3, 4, 5, 6, 7, 8, 10, 14, 15, 16, 20, 25, 30, 33, 35, 40, 45, 50, 100],
+  [2, 4, 6, 7, 8, 10, 12, 13, 14, 15, 16, 20, 25, 28, 30, 33, 40, 50, 60, 66, 70, 80, 100],
+  [3, 6, 9, 10, 12, 15, 18, 20, 21, 24, 25, 30, 35, 42, 45, 50, 60, 65, 75, 100, 120],
+  [4, 8, 12, 16, 20, 24, 25, 28, 32, 40, 56, 65, 80],
+  [5, 6, 10, 15, 20, 25, 30, 35, 40, 50, 70, 100]
+]
+
 const questions = [
   async () => {
     const options = ['🐺', '🐲', '👺', '🔥', '🐘', '💀', '👨', '🐭', '🤖', '❌']
@@ -192,7 +203,7 @@ const questions = [
     const correctOption = options[correct]
     const correctText = correct ? 'No' : 'Yes'
     const link = `${encodeURIComponent(npc.name)}#npcs`
-    return { text, options, correctOption, correctText, link }
+    return { text, options, correctOption, correctText, link, time: 8 }
   },
   async () => {
     const options = ['🐁', '💍', '💪', '🤑', '💀']
@@ -216,7 +227,7 @@ const questions = [
     const correctOption = options[correct]
     const correctText = correct ? 'No' : 'Yes'
     const link = `${encodeURIComponent(npc.name)}#npcs`
-    return { text, options, correctOption, correctText, link }
+    return { text, options, correctOption, correctText, link, time: 8 }
   },
   async () => {
     const options = GENERAL_OPTIONS
@@ -323,7 +334,7 @@ const questions = [
         level: { $ne: 0 },
         $or: [{ subname: 'Rank 1' }, { subname: '' }]
       })
-    const ability2 = await findRandom(AbilityModel,
+    const ability2 = await findOneRandom(AbilityModel,
       {
         $and: [
           { level: { $ne: 0 } },
@@ -347,7 +358,7 @@ const questions = [
         ],
         class: { $ne: 0 }
       })
-    const ability2 = await findRandom(AbilityModel,
+    const ability2 = await findOneRandom(AbilityModel,
       {
         $and: [
           { range: { $gt: 10 } },
@@ -412,6 +423,95 @@ const questions = [
   },
   async () => {
     const options = GENERAL_OPTIONS;
+    const chosenOne = await findOneRandom(TalentModel,
+      { name: { '$regex': '^((?!Improved).)*$', '$options': 'i' } }
+    )
+    const talents = shuffle(await findRandom(TalentModel,
+      {
+        $and: [
+          { name: { '$regex': '^((?!Improved).)*$', '$options': 'i' } },
+          { name: { $ne: chosenOne.name } }
+        ],
+        specialization: chosenOne.specialization
+      }, 50))
+    const optionsTextsSet = new Set([chosenOne.name])
+    for (let i = 0; i < talents.length; i++) {
+      if (talents[i].description === chosenOne.description) {
+        continue
+      }
+      optionsTextsSet.add(talents[i].name)
+      if (optionsTextsSet.size >= options.length) {
+        break;
+      }
+    }
+    const optionsTexts = shuffle([...optionsTextsSet])
+    let text = `What is the name of the talent with following description:\n*${chosenOne.description}*\n?`
+    options.forEach((option, index) => {
+      text += `\n ${option} for **${optionsTexts[index]}**`
+    })
+    const correctOption = options[optionsTexts.findIndex(t => t === chosenOne.name)]
+    const correctText = `${chosenOne.name}${chosenOne.subname ? ` ${chosenOne.subname}` : ''}`
+    const link = chosenOne.url
+    return { text, options, correctOption, correctText, link }
+  },
+  async () => {
+    const options = GENERAL_OPTIONS;
+    const chosenOne = await findOneRandom(TalentModel,
+      {
+        imageUrl: { $ne: null },
+        name: { '$regex': '^((?!Improved).)*$', '$options': 'i' }
+      })
+    const talents = shuffle(await findRandom(TalentModel,
+      {
+        imageUrl: { $ne: null },
+        specialization: chosenOne.specialization,
+        name: { '$regex': '^((?!Improved).)*$', '$options': 'i' }
+      }, 50))
+    const optionsTextsSet = new Set([chosenOne.name])
+    for (let i = 0; i < talents.length; i++) {
+      if (talents[i].imageUrl === chosenOne.imageUrl) {
+        continue
+      }
+      optionsTextsSet.add(talents[i].name)
+      if (optionsTextsSet.size >= options.length) {
+        break;
+      }
+    }
+    const optionsTexts = shuffle([...optionsTextsSet])
+    let text = `What is the name of the talent with this icon?`
+    let file = chosenOne.imageUrl
+    options.forEach((option, index) => {
+      text += `\n ${option} for **${optionsTexts[index]}**`
+    })
+    const correctOption = options[optionsTexts.findIndex(t => t === chosenOne.name)]
+    const correctText = chosenOne.name
+    const link = chosenOne.url
+    return { text, options, correctOption, correctText, link, file }
+  },
+  async () => {
+    const options = GENERAL_OPTIONS;
+    const correct = Math.floor(Math.random() * options.length)
+    const rank = Math.floor(Math.random() * 5) + 1
+    const percentages = talentPercentages[rank - 1]
+    const startOptionIndex = Math.floor(Math.random() * (percentages.length - options.length))
+    const optionsPercentages = percentages.slice(startOptionIndex, startOptionIndex + options.length)
+    const correctPercentage = optionsPercentages[correct]
+    const talent = await findOneRandom(TalentModel, {
+      subname: `Rank ${rank}`,
+      description: { $regex: `${correctPercentage}%` }
+    })
+    const descriptionCensored = talent.description.replace(correctPercentage.toString(), '**X**')
+    let text = `What's the value of **X** in this description of **${talent.name} ${talent.subname}**:\n*${descriptionCensored}*\n?`
+    options.forEach((option, index) => {
+      text += `\n ${option} for **${optionsPercentages[index]}%**`
+    })
+    const correctOption = options[correct]
+    const correctText = correctPercentage
+    const link = talent.url
+    return { text, options, correctOption, correctText, link, time: 16 }
+  },
+  async () => {
+    const options = GENERAL_OPTIONS;
     const factions = shuffle(await findRandom(FactionModel, {}, 4))
     const correct = Math.floor(Math.random() * GENERAL_OPTIONS.length)
     let text = `Which faction fits the following description:\n*${factions[correct].descriptionCensored}*\n?`
@@ -456,21 +556,21 @@ const questions = [
     return { text, options, correctOption, correctText, link }
   },
 ]
-const TIME_FOR_QUESTION = 5
+const TIME_FOR_QUESTION = 12
 const TOTAL_ROUNDS = questions.length
 
 const play = async () => {
   round = 1
   scores = {}
   do {
-    const { text, options, correctOption, correctText, link, file } = await questions[round - 1]()
+    const { text, options, correctOption, correctText, link, file, time } = await questions[round - 1]()
     const httpLink = link.startsWith('http') ? link : `https://classic.wowhead.com/search?q=${link}`
     const questionMessage = await gameChannel.send(`-- Round ${round}/${TOTAL_ROUNDS} --\n${text}`, { file })
-    let timeLeft = TIME_FOR_QUESTION
-    const timerMessage = await gameChannel.send(TIME_FOR_QUESTION)
+    let timeLeft = time || TIME_FOR_QUESTION
+    const timerMessage = await gameChannel.send(timeLeft)
     asyncForEach(options, option => questionMessage.react(option))
     await sleep(options.length * 600)
-    for (let i = TIME_FOR_QUESTION; i >= 0; i--) {
+    for (let i = timeLeft; i >= 0; i--) {
       await timerMessage.edit(i)
       await sleep(1000)
     }
