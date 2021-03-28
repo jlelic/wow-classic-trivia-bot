@@ -19,3 +19,14 @@ export const flatten = list => list.reduce(
 );
 
 export const selectRandom = list => list[Math.floor(Math.random() * list.length)]
+export const randomIndex = list => Math.floor(Math.random() * list.length)
+
+export const formatOptions = (options, optionsTexts) => {
+  const texts = ['']
+  options.forEach((option, index) => {
+    texts.push(` ${option} for **${optionsTexts[index]}**`)
+  })
+  return texts.join('\n')
+}
+
+export const embedColor = '#2b9752'

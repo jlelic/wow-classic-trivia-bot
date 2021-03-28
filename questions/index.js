@@ -1,30 +1,58 @@
 import abilitiesQuestions from '../questions/abilities'
-import factionsQuestions from '../questions/factions'
-import itemsQuestions from '../questions/items'
-import locationsQuestions from '../questions/locations'
 import npcsQuestions from '../questions/npcs'
-import talentsQuestions from '../questions/talents'
-import { flatten, shuffle } from '../utils'
+import itemsQuestions from './items'
+import soundsQuestions from './sounds'
+import zonesQuestions from './zones'
+import professionsQuestions from './professions'
+import {flatten, selectRandom, shuffle} from '../utils'
 
 const categoryQuestions = {
-  abilities: abilitiesQuestions,
-  factions: factionsQuestions,
-  items: itemsQuestions,
-  locations: locationsQuestions,
-  npcs: npcsQuestions,
-  talents: talentsQuestions
+    items: itemsQuestions,
+    sounds: soundsQuestions,
+    abilities: abilitiesQuestions,
+    // factions: factionsQuestions,
+    npcs: npcsQuestions,
+    professions: professionsQuestions,
+    zones: zonesQuestions,
+    // talents: talentsQuestions
 }
 
 // Array​.prototype​.flat doesn't work on node?
 const allQuestions = flatten(Object.values(categoryQuestions))
 
+const filterByExpansion = (wowexp, questions) => questions.filter(question => !question.expansions || question.expansions.includes(wowexp))
+
 export const getCategories = () => Object.keys(categoryQuestions)
 
-export const getOneQuestion = () => [shuffle(allQuestions)[0]]
+export const getOneQuestion = (wowexp) => [shuffle(filterByExpansion(wowexp, allQuestions))[0]]
 
-export const getCategoryQuestions = (category, n) => shuffle(categoryQuestions[category]).slice(0, n)
+export const getUniqueCategoryQuestions = (wowexp, category, n) => {
+    return filterByExpansion(wowexp, categoryQuestions[category]).slice(0, n)
+}
 
-export const getLimitedQuestions = (n) => shuffle(allQuestions).slice(0, n)
+export const getCategoryQuestions = (wowexp, category, n) => {
+    const questions = []
+    do {
+        questions.push(selectRandom(filterByExpansion(wowexp, categoryQuestions[category])))
+    } while (questions.length < n)
+    return questions
+}
 
-export const getAllQuestions = () => shuffle(allQuestions)
+export const getNQuestions = (wowexp, n) => {
+    const validQuestions = filterByExpansion(wowexp, allQuestions)
+    const result = []
+    let i = 0
+    shuffle(validQuestions)
+    do {
+        result.push(validQuestions[i])
+        i++
+        if(i === validQuestions.length) {
+            i = 0
+            shuffle(validQuestions)
+        }
+    } while(result.length < n)
+    return result
+}
+
+export const getAllQuestions = (wowexp) => shuffle(filterByExpansion(wowexp, allQuestions))
 

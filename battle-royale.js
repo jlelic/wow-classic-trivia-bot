@@ -34,15 +34,14 @@ export default class BattleRoyale extends TriviaGame {
       const question = getCategoryQuestions(category, 1)[0]
       const eliminated = new Set()
       await asyncForEach(this.playerIds, async (playerId) => {
-        const { text, options, correctOption, correctText, link, file, time } = await question()
-        const httpLink = link.startsWith('http') ? link : `https://classic.wowhead.com/search?q=${link}`
+        const { text, options, correctOption, correctText, file, time } = await question()
         const questionMessage = await this.gameChannel.send(`Question for <@${playerId}>\n${text}`, { file })
         let timeLeft = time || DEFAULT_TIME_FOR_QUESTION
         const timerMessage = await this.gameChannel.send(timeLeft)
         await asyncForEach(options, option => questionMessage.react(option))
         await sleep(options.length * 600)
         const answeredCorrectly = await this.collectAnswer(questionMessage, playerId, correctOption, timerMessage, timeLeft)
-        await this.gameChannel.send(`The correct answer was: ${correctOption} - **${correctText}**\n${httpLink}`)
+        await this.gameChannel.send(`The correct answer was: ${correctOption} - **${correctText}**\n${link}`)
         if (answeredCorrectly) {
           await this.gameChannel.send(`You've answered correctly, good job!`)
         } else {
