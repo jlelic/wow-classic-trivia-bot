@@ -90,7 +90,7 @@ client.on('message', async (message) => {
         case 'quick':
             game.play(message.channel, getOneQuestion(WoWExpansion.Classic))
             return
-        case 'final':
+        case 'all':
             game.play(message.channel, getAllQuestions(WoWExpansion.Classic))
             return
         case 'help':
