@@ -1,8 +1,6 @@
-import {WoWExpansion} from "./wowhead";
-
-const Discord = require('discord.js')
-const fs = require('fs')
-import BattleRoyale from './battle-royale'
+import {WoWExpansion} from "./wowhead"
+import express from 'express'
+import Discord  from 'discord.js'
 import {
     getAllQuestions, getCategories, getCategoryQuestions,
     getNQuestions, getOneQuestion, getUniqueCategoryQuestions
@@ -25,7 +23,7 @@ client.on('error', (err) => {
 })
 
 client.on('ready', async () => {
-    console.log(`Bot has started, with ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} guilds.`);
+    console.log(`Bot has started, ${client.channels.cache.size} channels in ${client.guilds.cache.size} guilds.`);
     client.user.setActivity('Type !quiz help')
     // try {
     //   await connect()
@@ -134,3 +132,11 @@ const exit = async () => {
 }
 
 client.login(token)
+
+const app = express()
+
+app.get('/', function (req, res) {
+    res.send('go back to discord')
+})
+
+app.listen(process.env.PORT || 3000)
