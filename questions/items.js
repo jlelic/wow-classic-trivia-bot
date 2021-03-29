@@ -26,7 +26,9 @@ const getFlavorText = async (wowexp, itemId) => {
 
 const getItemSetImgUrl = async (wowexp, itemSetId) => {
     const $ = await loadTooltip(wowexp, `item-set/${itemSetId}`)
-    return $('source')[0].attribs.srcset
+    const womanMaleUrl = $('source')[0].attribs.srcset
+    const gnomeUrl = womanMaleUrl.replace('item-set/1', 'item-set/7')
+    return gnomeUrl
 }
 
 const getItemLink = (wowexp, itemId) => `${WOWHEAD_URL[wowexp]}item=${itemId}`
