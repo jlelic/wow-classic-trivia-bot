@@ -1,5 +1,6 @@
 import cheerio from 'cheerio'
 import fetch from 'node-fetch'
+import {selectRandom} from "./utils";
 
 export const WoWExpansion = {
     Classic: 'classic',
@@ -33,6 +34,19 @@ export const getWowheadSpellsTable = async (wowexp, query) => {
     const iconsTable = JSON.parse(matched)
     const spellsTable = eval(htmlText.match(/var listviewspells = [^;]+/)[0].slice(20))
     return {iconsTable, spellsTable}
+}
+
+export const getWowheadScreenshots = async (wowexp, query) => {
+    const result = await fetch(`${WOWHEAD_URL[wowexp]}${query}`)
+    const htmlText = await result.text()
+    const matchedText = htmlText.match(/var lv_screenshots = [^;]+/)[0].slice(21)
+    return eval(matchedText)
+}
+
+export const getWowheadRandomScreenshot = async (wowexp, query) => {
+    const screenshots = await getWowheadScreenshots(wowexp, query)
+    const screenshot = selectRandom(screenshots)
+    return `https://wow.zamimg.com/uploads/screenshots/normal/${screenshot.id}.jpg`
 }
 
 class Listview {

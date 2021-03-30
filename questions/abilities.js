@@ -6,6 +6,7 @@ import {getWowheadSpecializations, getWowheadSpellsTable, WoWExpansion, WOWHEAD_
 import {classes} from "../enums";
 import fetch from "node-fetch";
 import cheerio from "cheerio";
+import {loadTooltip} from "./items";
 
 const getIconLink = (iconName) => `https://wow.zamimg.com/images/wow/icons/medium/${iconName}.jpg`
 const getSpellLink = (wowexp, id) => `${WOWHEAD_URL[wowexp]}spell=${id}`
@@ -169,5 +170,34 @@ export default [
             const image = `https://wow.zamimg.com/images/wow/talents/backgrounds/classic/${correctSpec.id}.jpg`
             return {text, options, optionsTexts, correctOption, correctText, link, image}
         },
-    }
+    },
+    {
+        expansions: [WoWExpansion.Classic, WoWExpansion.TBC],
+        generator: async (wowexp) => {
+            const options = GENERAL_OPTIONS
+            const query = `spells/talents?filter=12;1;0`
+            const {spellsTable} = await getWowheadSpellsTable(wowexp, query)
+            const shuffledTalents = shuffle(spellsTable.filter(spell => !petAbilities.has(spell.name) && !spell.name.startsWith('Improved')))
+            const optionsTalents = []
+            let i = 0
+            do {
+                if (!optionsTalents.find(talent => talent.name === shuffledTalents[i].name)) {
+                    optionsTalents.push(shuffledTalents[i])
+                }
+                i++
+            } while (optionsTalents.length < options.length)
+            const correctIndex = randomIndex(options)
+            const correctTalent = optionsTalents[correctIndex]
+            const $ = await loadTooltip(wowexp, `spell/${correctTalent.id}`)
+            const text = `Which max rank talent has description:\n*${$('.q').text()}*\n?`
+            const optionsTexts = optionsTalents.map(talent => talent.name)
+            const requirementString = $('.wowhead-tooltip-requirements').text()
+            const [_, className, ...specNameArrayBracketed] = requirementString.split(' ')
+            const specName = specNameArrayBracketed.join(' ').slice(1, -1)
+            const correctText = `${correctTalent.name} - ${specName} ${className}`
+            const link = getSpellLink(wowexp, correctTalent.id)
+            const correctOption = options[correctIndex]
+            return {text, options, optionsTexts, correctOption, correctText, link}
+        },
+    },
 ]

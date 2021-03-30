@@ -1,11 +1,7 @@
-import NpcModel from '../models/npc'
-import {findOneRandom, findRandom} from '../db'
 import {randomIndex, shuffle} from '../utils'
-import {GENERAL_OPTIONS, RARITY_OPTIONS, TRIBE_OPTIONS, YES_NO_OPTIONS} from './options'
-import {ranks, tribes} from '../enums'
-import {getMainScreenshotUrl, getWowheadTable, WoWExpansion, WOWHEAD_URL} from "../wowhead";
-import {zones, zonesMap} from './zones'
-import fetch from "node-fetch";
+import {GENERAL_OPTIONS} from './options'
+import {getMainScreenshotUrl, getWowheadRandomScreenshot, getWowheadTable, WoWExpansion, WOWHEAD_URL} from "../wowhead";
+import {zonesMap} from './zones'
 
 const type = [
     'beasts',
@@ -34,7 +30,7 @@ export default [
             const correctIndex = randomIndex(optionsNpcs)
             const correctNpc = optionsNpcs[correctIndex]
             const npcUrl = `npc=${correctNpc.id}`
-            const image = await getMainScreenshotUrl(wowexp, npcUrl)
+            const image = await getWowheadRandomScreenshot(wowexp, npcUrl)
             const link = `${WOWHEAD_URL[wowexp]}${npcUrl}`
             const correctText = correctNpc.name
             const correctOption = options[correctIndex]
@@ -68,7 +64,7 @@ export default [
             const correctIndex = randomIndex(optionsNpcs)
             const correctNpc = optionsNpcs[correctIndex]
             const npcUrl = `npc=${correctNpc.id}`
-            const image = await getMainScreenshotUrl(wowexp, npcUrl)
+            const image = await getWowheadRandomScreenshot(wowexp, npcUrl)
             const link = `${WOWHEAD_URL[wowexp]}${npcUrl}`
             const correctText = `${correctNpc.name} can be found in ${zonesMap[correctNpc.location[0]].name}`
             const correctOption = options[correctIndex]

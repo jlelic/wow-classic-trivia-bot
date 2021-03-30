@@ -13,7 +13,8 @@ import {classes} from "../enums";
 import {findRandom} from "../db";
 import item from "../models/item";
 
-const loadTooltip = async (wowexp, url) => {
+export const loadTooltip = async (wowexp, url) => {
+    console.log('loading tooltip ' + url)
     const result = await fetch(`${WOWHEAD_URL[wowexp]}tooltip/${url}`)
     const htmlText = await result.text()
     return cheerio.load(JSON.parse(htmlText).tooltip)
