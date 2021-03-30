@@ -9,7 +9,7 @@ import {
     getWowheadTable, WoWExpansion,
     WOWHEAD_URL
 } from "../wowhead";
-import {classes} from "../enums";
+import {classes, classToFilter, reqClassToName} from "../enums";
 import {findRandom} from "../db";
 import item from "../models/item";
 
@@ -252,7 +252,6 @@ export default [
     {
         expansions: [WoWExpansion.Classic],
         generator: async (wowexp) => {
-            const classToFilter = [1, 2, 3, 7, 11, 4, 8, 9, 5]
             const options = CLASS_OPTIONS
             const correctIndex = Math.floor(Math.random() * 9)
             const query = wowexp === WoWExpansion.TBC ? `items?filter=152:166;${classToFilter[correctIndex]}:2;0:0` : `items?filter=152;${classToFilter[correctIndex]};0`
@@ -338,17 +337,6 @@ export default [
         expansions: [WoWExpansion.Classic, WoWExpansion.TBC],
         generator: async (wowexp) => {
             const options = GENERAL_OPTIONS
-            const reqClassToName = {
-                1: 'Warrior',
-                2: 'Paladin',
-                4: 'Hunter',
-                8: 'Rogue',
-                16: 'Priest',
-                64: 'Shaman',
-                128: 'Mage',
-                256: 'Warlock',
-                1024: 'Druid',
-            }
             let query = 'item-sets'
             if (wowexp === WoWExpansion.TBC) {
                 query += '?filter=13;2;0'

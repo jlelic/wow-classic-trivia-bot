@@ -3,7 +3,7 @@ import {findOneRandom, findRandom} from '../db'
 import {flatten, randomIndex, selectRandom, shuffle} from '../utils'
 import {GENERAL_OPTIONS, YES_NO_OPTIONS} from './options'
 import {getWowheadSpecializations, getWowheadSpellsTable, WoWExpansion, WOWHEAD_URL} from "../wowhead";
-import {classes} from "../enums";
+import {classes, classToFilter, reqClassToName} from "../enums";
 import fetch from "node-fetch";
 import cheerio from "cheerio";
 import {loadTooltip} from "./items";
@@ -175,9 +175,14 @@ export default [
         expansions: [WoWExpansion.Classic, WoWExpansion.TBC],
         generator: async (wowexp) => {
             const options = GENERAL_OPTIONS
-            const query = `spells/talents?filter=12;1;0`
+            const reqclass = selectRandom(classToFilter)
+            const query = `spells/talents/class:${reqclass}?filter=10;1;0`
             const {spellsTable} = await getWowheadSpellsTable(wowexp, query)
-            const shuffledTalents = shuffle(spellsTable.filter(spell => !petAbilities.has(spell.name) && !spell.name.startsWith('Improved')))
+            const shuffledTalents = shuffle(spellsTable.filter(spell =>
+                !petAbilities.has(spell.name)
+                && !spell.name.startsWith('Improved')
+                && !spell.name.endsWith('Specialization')
+                && spell.name !== 'Elemental Warding'))
             const optionsTalents = []
             let i = 0
             do {
@@ -189,9 +194,15 @@ export default [
             const correctIndex = randomIndex(options)
             const correctTalent = optionsTalents[correctIndex]
             const $ = await loadTooltip(wowexp, `spell/${correctTalent.id}`)
-            const text = `Which max rank talent has description:\n*${$('.q').text()}*\n?`
+            const regex = new RegExp(correctTalent.name, 'g')
+            const talentText = $('.q').text().replace(regex, '<this ability>')
+
+            let text = `Which first rank talent has the following text:\n*${talentText}*\n?`
+            if (text.length >256) {
+                text = `${text.slice(0,250)}...*?`
+            }
             const optionsTexts = optionsTalents.map(talent => talent.name)
-            const requirementString = $('.wowhead-tooltip-requirements').text()
+            const requirementString = $('.wowhead-tooltip-requirements')[0].children[0].data
             const [_, className, ...specNameArrayBracketed] = requirementString.split(' ')
             const specName = specNameArrayBracketed.join(' ').slice(1, -1)
             const correctText = `${correctTalent.name} - ${specName} ${className}`

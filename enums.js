@@ -20,6 +20,20 @@ export const ranks = {
   4: 'Boss',
 }
 
+export const classToFilter = [1, 2, 3, 7, 11, 4, 8, 9, 5]
+
+export const reqClassToName = {
+  1: 'Warrior',
+  2: 'Paladin',
+  4: 'Hunter',
+  8: 'Rogue',
+  16: 'Priest',
+  64: 'Shaman',
+  128: 'Mage',
+  256: 'Warlock',
+  1024: 'Druid',
+}
+
 export const maps = ['Eastern Kingdoms', 'Kalimdor']
 
 export const classMapToDb = [1, 2, 4, 64, 1024, 8, 128, 256, 16]
