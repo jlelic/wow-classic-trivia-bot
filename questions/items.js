@@ -191,6 +191,27 @@ const WeaponType = {
     Wand: 19
 }
 
+const itemSetTags = {
+    1: 'Tier 0',
+    2: 'Tier 0.5',
+    3: 'Tier 1',
+    4: 'Tier 2',
+    5: 'Tier 3',
+    6: 'Rare PvP Set',
+    8: 'Epic PvP Set',
+    9: 'AQ20 Set',
+    10: 'Tier 2.5',
+    11: 'ZG Set',
+    12: 'Tier 4',
+    13: 'Tier 5',
+    14: 'TBC Dungeon Set',
+    17: 'Season 1',
+    18: 'Tier 6',
+    19: 'Season 2',
+    20: 'Season 3',
+    22: 'Season 4',
+}
+
 export default [
     {
         expansions: [WoWExpansion.Classic],
@@ -316,6 +337,17 @@ export default [
         expansions: [WoWExpansion.Classic, WoWExpansion.TBC],
         generator: async (wowexp) => {
             const options = GENERAL_OPTIONS
+            const reqClassToName = {
+                1: 'Warrior',
+                2: 'Paladin',
+                4: 'Hunter',
+                8: 'Rogue',
+                16: 'Priest',
+                64: 'Shaman',
+                128: 'Mage',
+                256: 'Warlock',
+                1024: 'Druid',
+            }
             let query = 'item-sets'
             if (wowexp === WoWExpansion.TBC) {
                 query += '?filter=13;2;0'
@@ -327,7 +359,10 @@ export default [
             const correctIndex = randomIndex(itemSets)
             const itemSet = itemSets[correctIndex]
             const optionsTexts = itemSets.map(itemSet => itemSet.name)
-            const correctText = optionsTexts[correctIndex]
+            let correctText = optionsTexts[correctIndex]
+            if(itemSetTags[itemSet.note]) {
+                correctText += ` (${reqClassToName[itemSet.reqclass]} ${itemSetTags[itemSet.note]})`
+            }
             const correctOption = options[correctIndex]
             const image = await getItemSetImgUrl(wowexp, itemSet.id)
             const text = `What's the name of this item set?`
