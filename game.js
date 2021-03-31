@@ -2,7 +2,7 @@ import {asyncForEach, embedColor, sleep} from './utils'
 import {MessageEmbed} from "discord.js";
 import {WoWExpansion} from "./wowhead";
 
-const DEFAULT_TIME_FOR_QUESTION = 10
+const DEFAULT_TIME_FOR_QUESTION = 1
 
 export default class TriviaGame {
 

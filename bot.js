@@ -46,10 +46,10 @@ client.on('message', async (message) => {
     switch (params[1]) {
         case 'tbc':
             questions = [
-                ...getCategoryQuestions(WoWExpansion.TBC, 'abilities', 2),
+                ...getUniqueCategoryQuestions(WoWExpansion.TBC, 'abilities', 2),
                 ...getUniqueCategoryQuestions(WoWExpansion.TBC, 'items', 2),
                 ...getCategoryQuestions(WoWExpansion.TBC, 'npcs', 2),
-                ...getCategoryQuestions(WoWExpansion.TBC, 'zones', 2),
+                ...getUniqueCategoryQuestions(WoWExpansion.TBC, 'zones', 2),
                 ...getCategoryQuestions(WoWExpansion.TBC, 'sounds', 1),
             ]
             game.play(message.channel, questions, WoWExpansion.TBC)
